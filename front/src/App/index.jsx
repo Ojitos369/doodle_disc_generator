@@ -21,7 +21,7 @@ import { GeneralNotification } from '../Components/Modals/general/GeneralNotific
 
 function AppUI() {
     const { ls, s, f } = useStates();
-    const logged = useMemo(() => s.auth?.logged, [s.auth?.logged]);
+    // const logged = useMemo(() => s.auth?.logged, [s.auth?.logged]);
 
     useEffect(() => {
         cambiarThema(ls?.theme);
@@ -36,20 +36,20 @@ function AppUI() {
         f.auth.validateLogin();
     }, [location.href]);
 
-    if (!logged) {
-        return (
-            <div className={`text-[var(--my-minor)] bg-my-${ls.theme}`}>
-                <Routes>
-                    <Route path="" element={ <LoginPage /> } />
-                    <Route path="test" element={ <TestPage /> } />
-                    <Route path="*" element={ <LoginPage /> } />
-                </Routes>
-                <Theme />
-                {!!s.modals?.general?.notification &&
-                <GeneralNotification />}
-            </div>
-        )
-    }
+    // if (!logged) {
+    //     return (
+    //         <div className={`text-[var(--my-minor)] bg-my-${ls.theme}`}>
+    //             <Routes>
+    //                 <Route path="" element={ <LoginPage /> } />
+    //                 <Route path="test" element={ <TestPage /> } />
+    //                 <Route path="*" element={ <LoginPage /> } />
+    //             </Routes>
+    //             <Theme />
+    //             {!!s.modals?.general?.notification &&
+    //             <GeneralNotification />}
+    //         </div>
+    //     )
+    // }
 
     return (
         <div className={`text-[var(--my-minor)] bg-my-${ls.theme}`}>

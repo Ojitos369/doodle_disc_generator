@@ -1,6 +1,6 @@
 .editorContainer {
     // === VARIABLES DE COLOR DEL EDITOR ===
-    // Edita estos valores para cambiar rápidamente los esquemas de color
+    --ce-bg:              #0f172a;
     --ce-panel-bg:        #1e293b;
     --ce-panel-hover:     #334155;
     --ce-border:          #475569;
@@ -14,6 +14,7 @@
     --ce-tool-amber:      #d97706;
     --ce-tool-red:        #ef4444;
 
+    background-color: var(--ce-bg);
     color: var(--ce-text);
 }
 
@@ -23,6 +24,10 @@
 
 .textMuted {
     color: var(--ce-text-muted);
+}
+
+.borderColor {
+    border-color: var(--ce-border);
 }
 
 .inputControl {
@@ -35,9 +40,62 @@
     }
 }
 
+.slider {
+    accent-color: var(--ce-accent);
+}
+
+.toolBtn {
+    &:hover {
+        transform: scale(1.05);
+    }
+}
+
+.iconBtn {
+    background-color: var(--ce-panel-hover);
+    color: var(--ce-accent);
+    &:hover {
+        background-color: var(--ce-accent);
+        color: #fff;
+    }
+}
+
+.accentBtn {
+    background-color: var(--ce-accent);
+    color: #fff;
+    &:hover {
+        filter: brightness(1.15);
+    }
+}
+
+.amberBtn {
+    background-color: var(--ce-tool-amber);
+    color: #fff;
+    &:hover {
+        filter: brightness(1.15);
+    }
+}
+
+.layerBtn {
+    background-color: var(--ce-panel-hover);
+    &:hover {
+        background-color: var(--ce-border);
+    }
+}
+
+.toggleBtn {
+    background-color: var(--ce-panel-bg);
+    color: var(--ce-text-muted);
+    border: 1px solid var(--ce-border);
+    border-left: none;
+    &:hover {
+        color: var(--ce-text);
+        background-color: var(--ce-panel-hover);
+    }
+}
+
 /* Scrollbar personalizada */
 .customScrollbar::-webkit-scrollbar { 
-    width: 6px; 
+    width: 4px; 
 }
 .customScrollbar::-webkit-scrollbar-track { 
     background: transparent; 

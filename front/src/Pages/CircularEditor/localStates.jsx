@@ -25,13 +25,19 @@ export const localStates = () => {
     const [rotation, setRotation] = useState(0); 
     const [strokes, setStrokes] = useState([]); 
     const [currentStroke, setCurrentStroke] = useState(null); 
-    const [layers, setLayers] = useState({ black: true, red: true, blue: true, image: true, numbers: true });
+    const [layers, setLayers] = useState({ black: true, red: true, blue: true, image: true, numbers: true, generated: true });
     const [tool, setTool] = useState('draw-twin'); 
     const [brushWidth, setBrushWidth] = useState(5);
     const [numberSize, setNumberSize] = useState(48);
     const [purpleNumberSize, setPurpleNumberSize] = useState(48);
     const [stampedNumbers, setStampedNumbers] = useState([]);
     const [history, setHistory] = useState([]);
+
+    // Estados para trazos generados
+    const [strokeCount, setStrokeCount] = useState(10);
+    const [generatedStrokes, setGeneratedStrokes] = createState(['editor', 'generatedStrokes'], []);
+    const [selectedGeneratedId, setSelectedGeneratedId] = createState(['editor', 'selectedGeneratedId'], null);
+    const [hoveredGeneratedId, setHoveredGeneratedId] = createState(['editor', 'hoveredGeneratedId'], null);
     
     const [isInteracting, setIsInteracting] = useState(false);
     const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
@@ -43,7 +49,7 @@ export const localStates = () => {
         setTitulo("Editor Circular");
         setActualPage("editor");
         setActualMenu("herramientas");
-        setMenuBarMode('menuBarDefault');
+        setMenuBarMode('menuBarEditor');
         setMenuBarOpen(false);
         setSideBarOpen(false);
     }
@@ -223,6 +229,75 @@ export const localStates = () => {
         }]);
     };
 
+    // --- Generación de trazos desde imagen (via backend) ---
+
+    const captureImageSnapshot = () => {
+        // Create a temporary canvas with only the image rendered inside the circle
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = canvasSize;
+        tempCanvas.height = canvasSize;
+        const ctx = tempCanvas.getContext('2d');
+
+        // Fill background
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvasSize, canvasSize);
+
+        // Clip to circle
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(center, center, circleRadius, 0, Math.PI * 2);
+        ctx.clip();
+
+        // Draw image with current position/scale
+        if (image) {
+            ctx.save();
+            ctx.translate(center + imagePos.x, center + imagePos.y);
+            ctx.scale(imageScale, imageScale);
+            ctx.drawImage(image, -image.width / 2, -image.height / 2);
+            ctx.restore();
+        }
+
+        ctx.restore();
+        return tempCanvas.toDataURL('image/png');
+    };
+
+    const handleGenerateStrokes = () => {
+        if (!image) return;
+        const n = Math.max(1, Math.min(50, strokeCount));
+        const imageData = captureImageSnapshot();
+
+        f.editor.generateStrokesFromImage({
+            imageData,
+            n,
+            canvasSize,
+            center,
+            circleRadius,
+        });
+        setSelectedGeneratedId(null);
+        setMenuBarOpen(true);
+    };
+
+    const handleSelectGeneratedStroke = (id) => {
+        setSelectedGeneratedId(id);
+        // Paint the generated stroke as a twin on the canvas
+        const genArr = Array.isArray(generatedStrokes) ? generatedStrokes : [];
+        const genStroke = genArr.find(gs => gs.id === id);
+        if (!genStroke) return;
+        // Mark it as painted (keep in list) — createState doesn't support functional updates
+        const updatedStrokes = genArr.map(gs => gs.id === id ? { ...gs, painted: true } : gs);
+        setGeneratedStrokes(updatedStrokes);
+        // Add to the canvas strokes as a twin stroke
+        setHistory(prev => [...prev, { strokes, stampedNumbers }]);
+        setStrokes(prev => [...prev, {
+            id: genStroke.id,
+            points: genStroke.points,
+            width: genStroke.width,
+            initialRotation: rotation,
+            type: 'draw-twin',
+            generatedColor: genStroke.color,
+        }]);
+    };
+
     return {
         init,
         canvasSize, center, circleRadius,
@@ -241,19 +316,33 @@ export const localStates = () => {
         isInteracting, setIsInteracting,
         dragStart, setDragStart,
         handleUndo, handleExportPNG, handleImageUpload,
-        getPointerPos, handleErase, handlePointerDown, handlePointerMove, handlePointerUp, handleAddNumber
+        getPointerPos, handleErase, handlePointerDown, handlePointerMove, handlePointerUp, handleAddNumber,
+        // Stroke generation
+        strokeCount, setStrokeCount,
+        generatedStrokes, selectedGeneratedId, hoveredGeneratedId,
+        handleGenerateStrokes, handleSelectGeneratedStroke,
     }
 }
 
 export const editorEffect = (state) => {
     const { 
         init, canvasRef, canvasSize, center, circleRadius,
-        image, imagePos, imageScale, rotation, strokes, currentStroke, layers, brushWidth, stampedNumbers, numberSize, purpleNumberSize
+        image, imagePos, imageScale, rotation, strokes, currentStroke, layers, brushWidth, stampedNumbers, numberSize, purpleNumberSize,
+        generatedStrokes, selectedGeneratedId, hoveredGeneratedId, handleSelectGeneratedStroke
     } = state;
 
     useEffect(() => {
         init();
     }, []);
+
+    // Watch for MenuBar selection changes and paint the stroke
+    const prevSelectedRef = useRef(null);
+    useEffect(() => {
+        if (selectedGeneratedId && selectedGeneratedId !== prevSelectedRef.current) {
+            handleSelectGeneratedStroke(selectedGeneratedId);
+        }
+        prevSelectedRef.current = selectedGeneratedId;
+    }, [selectedGeneratedId]);
 
     useEffect(() => {
         const canvas = canvasRef.current;
@@ -377,11 +466,58 @@ export const editorEffect = (state) => {
 
         ctx.restore(); 
 
+        // 6. DIBUJAR TRAZOS GENERADOS como preview
+        if (layers.generated) {
+            const genArr = Array.isArray(generatedStrokes) ? generatedStrokes : [];
+            genArr.forEach(gs => {
+                if (gs.points.length < 2) return;
+                const isHovered = gs.id === hoveredGeneratedId;
+                const isSelected = gs.id === selectedGeneratedId;
+                const isPainted = gs.painted;
+
+                // Skip non-hovered painted strokes in the preview
+                if (isPainted && !isHovered) return;
+
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(center, center, circleRadius, 0, Math.PI * 2);
+                ctx.clip();
+
+                if (isHovered) {
+                    // Bright highlight on hover
+                    ctx.globalAlpha = 0.95;
+                    ctx.lineWidth = (gs.width || 3) + 3;
+                    ctx.shadowColor = gs.color;
+                    ctx.shadowBlur = 12;
+                    ctx.setLineDash([]);
+                } else if (isSelected) {
+                    ctx.globalAlpha = 0.8;
+                    ctx.lineWidth = gs.width || 3;
+                    ctx.setLineDash([]);
+                } else {
+                    ctx.globalAlpha = 0.3;
+                    ctx.lineWidth = gs.width || 3;
+                    ctx.setLineDash([8, 6]);
+                }
+
+                ctx.beginPath();
+                ctx.strokeStyle = gs.color;
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                ctx.moveTo(gs.points[0].x, gs.points[0].y);
+                for (let i = 1; i < gs.points.length; i++) {
+                    ctx.lineTo(gs.points[i].x, gs.points[i].y);
+                }
+                ctx.stroke();
+                ctx.restore();
+            });
+        }
+
         ctx.beginPath();
         ctx.arc(center, center, circleRadius, 0, Math.PI * 2);
         ctx.strokeStyle = '#cbd5e1';
         ctx.lineWidth = 4;
         ctx.stroke();
 
-    }, [image, imagePos, imageScale, rotation, strokes, currentStroke, layers, brushWidth, stampedNumbers, numberSize, purpleNumberSize]);
+    }, [image, imagePos, imageScale, rotation, strokes, currentStroke, layers, brushWidth, stampedNumbers, numberSize, purpleNumberSize, generatedStrokes, selectedGeneratedId, hoveredGeneratedId]);
 }

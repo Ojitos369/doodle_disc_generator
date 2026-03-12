@@ -3,6 +3,7 @@ import { useStates, createState } from "../../Hooks/useStates";
 import style from './styles/index.module.scss';
 
 import { MenuBarDefault } from "../../Pages/Index/MenuBarDefault";
+import { MenuBarEditor } from "../../Pages/CircularEditor/MenuBarEditor";
 
 export const localStates = () => {
     const { s } = useStates();
@@ -14,6 +15,8 @@ export const localStates = () => {
         switch (menuMode) {
             case 'menuBarDefault':
                 return MenuBarDefault;
+            case 'menuBarEditor':
+                return MenuBarEditor;
             default:
                 return null;
         }
