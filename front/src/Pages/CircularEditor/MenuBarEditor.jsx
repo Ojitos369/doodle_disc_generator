@@ -58,7 +58,8 @@ export const MenuBarEditor = () => {
         return points.map((p, i) => {
             const x = ((p.x - minX) / scale) * 80 + offX;
             const y = ((p.y - minY) / scale) * 80 + offY;
-            return `${i === 0 ? 'M' : 'L'} ${x.toFixed(1)} ${y.toFixed(1)}`;
+            const cmd = (i === 0 || p.type === 'M') ? 'M' : 'L';
+            return `${cmd} ${x.toFixed(1)} ${y.toFixed(1)}`;
         }).join(' ');
     };
 

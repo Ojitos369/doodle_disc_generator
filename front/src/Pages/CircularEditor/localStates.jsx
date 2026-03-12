@@ -382,14 +382,17 @@ export const editorEffect = (state) => {
 
             ctx.beginPath();
             ctx.strokeStyle = color;
-            ctx.lineWidth = stroke.width;
+            ctx.lineWidth = stroke.width || 3;
             ctx.lineCap = 'round';
             ctx.lineJoin = 'round';
             
-            ctx.moveTo(stroke.points[0].x, stroke.points[0].y);
-            for (let i = 1; i < stroke.points.length; i++) {
-                ctx.lineTo(stroke.points[i].x, stroke.points[i].y);
-            }
+            stroke.points.forEach((p, i) => {
+                if (i === 0 || p.type === 'M') {
+                    ctx.moveTo(p.x, p.y);
+                } else {
+                    ctx.lineTo(p.x, p.y);
+                }
+            });
             ctx.stroke();
             ctx.restore();
         };
@@ -504,10 +507,13 @@ export const editorEffect = (state) => {
                 ctx.strokeStyle = gs.color;
                 ctx.lineCap = 'round';
                 ctx.lineJoin = 'round';
-                ctx.moveTo(gs.points[0].x, gs.points[0].y);
-                for (let i = 1; i < gs.points.length; i++) {
-                    ctx.lineTo(gs.points[i].x, gs.points[i].y);
-                }
+                gs.points.forEach((p, i) => {
+                    if (i === 0 || p.type === 'M') {
+                        ctx.moveTo(p.x, p.y);
+                    } else {
+                        ctx.lineTo(p.x, p.y);
+                    }
+                });
                 ctx.stroke();
                 ctx.restore();
             });
