@@ -1,0 +1,146 @@
+::view-transition-group(*) {
+    animation-duration: inherit;
+    mix-blend-mode: normal;
+}
+
+::view-transition-old(*),
+::view-transition-new(*) {
+    animation-duration: inherit;
+    animation-fill-mode: both !important;
+}
+
+::view-transition-old(.moveRight) {
+    animation: move-right 0.5s ease-in-out reverse;
+}
+
+::view-transition-new(.moveRight) {
+    animation: move-right 0.5s ease-in-out forwards;
+}
+
+::view-transition-old(.moveLeft) {
+    animation: move-left 0.5s ease-in-out reverse;
+}
+
+::view-transition-new(.moveLeft) {
+    animation: move-left 0.5s ease-in-out forwards;
+}
+
+::view-transition-old(.moveUp) {
+    animation: move-up 0.5s ease-in-out reverse;
+}
+
+::view-transition-new(.moveUp) {
+    animation: move-up 0.5s ease-in-out forwards;
+}
+
+::view-transition-old(.moveDown) {
+    animation: move-down 0.5s ease-in-out reverse;
+}
+
+::view-transition-new(.moveDown) {
+    animation: move-down 0.5s ease-in-out forwards;
+}
+
+::view-transition-old(.moveBack) {
+    animation: move-back 0.5s ease-in-out reverse;
+}
+
+::view-transition-new(.moveBack) {
+    animation: move-back 0.5s ease-in-out forwards;
+}
+
+::view-transition-old(.moveFront) {
+    animation: move-front 0.5s ease-in-out reverse;
+}
+
+::view-transition-new(.moveFront) {
+    animation: move-front 0.5s ease-in-out forwards;
+}
+
+@keyframes move-right {
+  from {
+    right: 100%;
+    width: 0%;
+    height: 100%;
+    opacity: 0;
+  }
+
+  to {
+    right: 0%;
+    width: 100%;
+    height: 100%;
+    opacity: 1;
+  }
+}
+
+@keyframes move-left {
+  from {
+    left: 100%;
+    width: 0%;
+    height: 100%;
+    opacity: 0;
+  }
+
+  to {
+    left: 0%;
+    width: 100%;
+    height: 100%;
+    opacity: 1;
+  }
+}
+
+@keyframes move-up {
+  from {
+    top: 100%;
+    width: 100%;
+    height: 0%;
+    opacity: 0;
+  }
+
+  to {
+    top: 0%;
+    width: 100%;
+    height: 100%;
+    opacity: 1;
+  }
+}
+
+@keyframes move-down {
+  from {
+    top: -100%;
+    width: 100%;
+    height: 0%;
+    opacity: 0;
+  }
+
+  to {
+    top: 0%;
+    width: 100%;
+    height: 100%;
+    opacity: 1;
+  }
+}
+
+@keyframes move-back {
+  from {
+    transform: scale(0);
+    opacity: 0;
+  }
+
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes move-front {
+  from {
+    transform: scale(2);
+    opacity: 0;
+  }
+
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}

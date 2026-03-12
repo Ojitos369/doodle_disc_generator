@@ -1,0 +1,111 @@
+@use '../../../static/css/response.scss' as *;
+
+.SideBarContent {
+    background: var(--my-major);
+    color: var(--my-minor);
+    height: calc(100vh - var(--header-h));
+    width: 100%;
+    margin: 0;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-content: start;
+    flex-wrap: wrap;
+    // border-right: 1px solid var(--my-minor);
+    transition: all 0.5s ease-in-out;
+    z-index: 1;
+    position: fixed;
+    overflow: hidden;
+    top: var(--header-h);
+    left: 0;
+
+    .elementsList {
+        width: 100%;
+        display: flex;
+        align-self: center;
+        justify-content: center;
+        flex-wrap: wrap;
+
+        .linksList {
+            width: 100%;
+            overflow: hidden;
+            transition: grid-template-rows 0.5s ease-in-out;
+            display: grid;
+            grid-template-rows: 0fr;
+            &.linksListSelected {
+                grid-template-rows: 1fr;
+                overflow-x: hidden;
+                overflow-y: auto;
+            }
+            .linksListContent {
+                min-height: 0;
+                overflow: hidden;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: start;
+            }
+
+            .linkPage {
+                width: 100%;
+                border: none;
+                text-align: start;
+                padding: 5px 35px;
+                color: var(--my-minor);
+
+                &.linkSelected {
+                    background: #0000;
+                    color: var(--my-primary);
+                    font-weight: bolder;
+                    font-size: 1.1rem;
+                    box-shadow: none;
+                    border: none;
+
+                    &:hover {
+                        background: #0000;
+                        color: var(--my-primary);
+                        cursor: default;
+                    }
+                }
+            }
+        }
+
+        .link {
+            border: none;
+            width: 100%;
+            padding: 5px 25px;
+            text-align: start;
+            transition: all 0.3s ease-in-out;
+            box-shadow: 0px 0px 0px #212529, 0px 0px 0px #353a3f;
+
+            &:hover {
+                border: none;
+                background: linear-gradient(145deg, #434c55, #2b323a);
+                box-shadow: 1px 1px 3px #212529,
+                    -1px -1px 3px #353a3f;
+
+                color: white;
+            }
+
+            &.linkSelected {
+                color: var(--my-success);
+                border: none;
+                &:hover {
+                    background-color: var(--my-success);
+                    color: white;
+                }
+            }
+        }
+    }
+
+    @include md {
+        width: var(--side-bar-w);
+        position: relative;
+        position: sticky;
+    }
+
+    &.hiddeBar {
+        width: 0;
+        // border-right: 1px solid transparent;
+    }
+}

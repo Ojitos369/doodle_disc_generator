@@ -1,0 +1,13 @@
+*__pycache__*
+*node_modules*
+*dist*
+*.vscode*
+*.vscode/*
+*.env*
+logs/*
+*.pnpm-store*
+
+/back/media/*
+!/back/media/stay
+!/back/media/pages
+!/back/media/dist

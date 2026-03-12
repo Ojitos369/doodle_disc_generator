@@ -1,0 +1,61 @@
+@use '../../../static/css/response.scss' as *;
+
+.mainPage {
+    display: flex;
+    width: 100vw;
+    height: 100vh;
+    flex-wrap: wrap;
+    overflow: hidden;
+    justify-content: start;
+    align-content: start;
+
+    .headerContent {
+        width: 100%;
+    }
+    .pageContent {
+        width: 100%;
+        display: flex;
+        flex-direction: row;
+        justify-content: start;
+        align-content: start;background: var(--my-major);
+        
+
+        .sectionContainer {
+            width: 100%;
+            height: calc(100vh - var(--header-h));
+            transition: all 0.5s ease-in-out;
+            overflow: auto;
+            @include md {
+                &.sidebarOpen {
+                    width: calc(100vw - var(--side-bar-w));
+                }
+                &.menubarOpen {
+                    width: calc(100vw - var(--menu-bar-w));
+                }
+                &.bothOpen {
+                    width: calc(100vw - var(--side-bar-w) - var(--menu-bar-w));
+                }
+            }
+
+            .contentContainer {
+                width: 100%;
+                height: calc(100vh - var(--hsch));
+                overflow: scroll;
+                background: var(--my-major);
+                .outletContainer {
+                    width: 100%;
+                    padding: 20px;
+                    width: 100%;
+                    .outlet {
+                        width: 100%;
+                        min-height: calc(100vh - var(--header-h) - 40px);
+                        border-radius: 10px;
+                        background: var(--my-major);
+                        // box-shadow: 0 0px 15px -3px var(--my-minor);
+                        padding: 10px;
+                    }
+                }
+            }
+        }
+    }
+}

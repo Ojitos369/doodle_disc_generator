@@ -1,0 +1,48 @@
+.editorContainer {
+    // === VARIABLES DE COLOR DEL EDITOR ===
+    // Edita estos valores para cambiar rápidamente los esquemas de color
+    --ce-panel-bg:        #1e293b;
+    --ce-panel-hover:     #334155;
+    --ce-border:          #475569;
+    --ce-text:            #f8fafc;
+    --ce-text-muted:      #94a3b8;
+    --ce-accent:          var(--my-primary, #4f46e5);
+    
+    // Colores de herramientas
+    --ce-tool-blue:       #3b82f6;
+    --ce-tool-purple:     #a855f7;
+    --ce-tool-amber:      #d97706;
+    --ce-tool-red:        #ef4444;
+
+    color: var(--ce-text);
+}
+
+.panel {
+    background-color: var(--ce-panel-bg);
+}
+
+.textMuted {
+    color: var(--ce-text-muted);
+}
+
+.inputControl {
+    background-color: var(--ce-panel-hover);
+    color: var(--ce-text);
+    border: 1px solid var(--ce-border);
+    outline: none;
+    &:focus {
+        border-color: var(--ce-accent);
+    }
+}
+
+/* Scrollbar personalizada */
+.customScrollbar::-webkit-scrollbar { 
+    width: 6px; 
+}
+.customScrollbar::-webkit-scrollbar-track { 
+    background: transparent; 
+}
+.customScrollbar::-webkit-scrollbar-thumb { 
+    background-color: var(--ce-border); 
+    border-radius: 20px; 
+}

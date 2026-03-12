@@ -1,0 +1,98 @@
+    @use '../../../static/css/response.scss' as *;
+
+    .headerContent {
+        color: var(--my-minor);
+        height: var(--header-h);
+        width: 100%;
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        align-content: center;
+        flex-wrap: wrap;
+        border-bottom: 1px solid var(--my-minor);
+        position: sticky;
+        top: 0;
+        padding: 5px 35px;
+
+        .menuIndexPart {
+            display: flex;
+            width: auto;
+            height: 100%;
+            justify-content: start;
+            align-content: center;
+            padding: 3px 0;
+        }
+
+        .userPart {
+            width: auto;
+            height: 100%;
+            display: flex;
+            flex-direction: row;
+            justify-content: start;
+            align-items: center;
+            // padding: 0 15px;
+        }
+
+        .menuUserContainer {
+            padding: 0 10px;
+            display: flex;
+            flex-direction: row;
+            flex-wrap: wrap;
+            justify-content: start;
+            align-content: start;
+            width: 100%;
+
+            .userTitle {
+                width: 100%;
+                border-bottom: 1px solid var(--my-minor);
+                padding-bottom: 4px;
+                font-weight: bolder;
+                font-size: 1.2rem;
+                text-align: center;
+            }
+
+            .menuActions {
+                width: 100%;
+                display: flex;
+                flex-direction: row;
+                flex-wrap: wrap;
+                justify-content: space-around;
+                align-content: start;
+
+                .menuAction {
+                    margin-top: 20px;
+                    width: 90%;
+                    padding: 10px;
+                    border-radius: 7px;
+                    transition: all 0.5s ease-in-out;
+
+                    @include md {
+                        width: 30%;
+                    }
+
+                    &:hover {
+                        font-weight: bolder;
+                        font-size: 1.1rem;
+                    }
+
+                    &.chageTheme {
+                        border: 2px solid var(--my-minor);
+
+                        &:hover {
+                            background: var(--my-minor);
+                            color: var(--my-major);
+                        }
+                    }
+
+                    &.closeSession {
+                        border: 2px solid var(--my-danger);
+
+                        &:hover {
+                            background: var(--my-danger);
+                            color: white;
+                        }
+                    }
+                }
+            }
+        }
+    }
