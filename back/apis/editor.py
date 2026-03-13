@@ -177,43 +177,59 @@ def generate_strokes(req: GenerateStrokesRequest):
 
         n_req = min(req.n, 50)
 
-        # 9. Ensure we have exactly n_req groups
-        # If too few, split longest paths
-        while len(all_paths) < n_req:
-            all_paths.sort(key=len, reverse=True)
-            longest = all_paths.pop(0)
-            if len(longest) < 4:
-                all_paths.append(longest)
-                break
-            mid = len(longest) // 2
-            all_paths.append(longest[:mid+1])
-            all_paths.append(longest[mid:])
-            
+        # 9. Distribute paths into n_req groups prioritizing continuity
         final_groups = [[] for _ in range(n_req)]
         
-        if len(all_paths) == n_req:
-            for i, p in enumerate(all_paths):
-                final_groups[i].append(p)
-        else:
-            # Group paths geometrically using K-Means
-            centroids = []
-            valid_paths = []
-            for p in all_paths:
-                if len(p) == 0: continue
-                cx = sum(pt[0] for pt in p) / len(p)
-                cy = sum(pt[1] for pt in p) / len(p)
-                centroids.append([cx, cy])
-                valid_paths.append(p)
+        if len(all_paths) < n_req:
+            # We have fewer lines than requested strokes, we MUST split the longest ones
+            while len(all_paths) < n_req:
+                all_paths.sort(key=len, reverse=True)
+                longest = all_paths.pop(0)
+                if len(longest) < 4:
+                    all_paths.append(longest)
+                    break # Cannot split further cleanly
+                mid = len(longest) // 2
+                all_paths.append(longest[:mid+1])
+                all_paths.append(longest[mid:])
                 
-            centroids = np.array(centroids, dtype=np.float32)
-            if len(centroids) >= n_req:
-                criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 100, 0.2)
-                _, labels, _ = cv2.kmeans(centroids, n_req, None, criteria, 10, cv2.KMEANS_RANDOM_CENTERS)
-                for i, label in enumerate(labels.flatten()):
-                    final_groups[label].append(valid_paths[i])
-            else:
-                for i, p in enumerate(valid_paths):
-                    final_groups[i % n_req].append(p)
+            for i, p in enumerate(all_paths):
+                final_groups[i % n_req].append(p)
+                
+        else:
+            # We have more lines than requested strokes, we must group them.
+            # Keep the n_req longest lines as the base for each group.
+            all_paths.sort(key=len, reverse=True)
+            for i in range(n_req):
+                final_groups[i].append(all_paths[i])
+                
+            # Distribute the remaining smaller paths
+            remaining_paths = all_paths[n_req:]
+            
+            for p in remaining_paths:
+                if not p: continue
+                p_start = p[0]
+                p_end = p[-1]
+                
+                best_group_idx = 0
+                min_dist = float('inf')
+                
+                # Find the group whose last endpoint is closest to this path
+                for i in range(n_req):
+                    group = final_groups[i]
+                    if not group: continue
+                    last_path = group[-1]
+                    if not last_path: continue
+                    
+                    g_end = last_path[-1]
+                    
+                    # Distance from group end to path start
+                    dist = (g_end[0] - p_start[0])**2 + (g_end[1] - p_start[1])**2
+                    
+                    if dist < min_dist:
+                        min_dist = dist
+                        best_group_idx = i
+                        
+                final_groups[best_group_idx].append(p)
 
         # 10. Simplify and build response
         strokes = []
