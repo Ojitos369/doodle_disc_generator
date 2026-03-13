@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Image as ImageIcon, Pencil, Eraser, Move, Eye, EyeOff, RotateCw, Hash, PenTool, Undo2, MousePointerClick, Download, ChevronLeft, Settings2, Shuffle } from 'lucide-react';
+import { Image as ImageIcon, Pencil, Eraser, Move, Eye, EyeOff, RotateCw, Hash, PenTool, Undo2, MousePointerClick, Download, ChevronLeft, Settings2, Shuffle, Loader2 } from 'lucide-react';
 import { localStates, editorEffect } from './localStates';
 import styles from './styles/index.module.scss';
 
@@ -18,6 +18,7 @@ export function CircularEditor() {
         handleUndo, handleExportPNG, handleImageUpload,
         handlePointerDown, handlePointerMove, handlePointerUp, handleAddNumber,
         strokeCount, setStrokeCount, handleGenerateStrokes, generatedStrokes,
+        generationLogs,
     } = state;
     editorEffect(state);
 

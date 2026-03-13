@@ -41,6 +41,11 @@ export const localStates = () => {
     
     const [isInteracting, setIsInteracting] = useState(false);
     const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+    
+    // Logs de progreso por WebSocket
+    const [generationLogs, setGenerationLogs] = createState(['editor', 'generationLogs'], []);
+    const [previewPaths, setPreviewPaths] = useState([]);
+    const [previewGroupPaths, setPreviewGroupPaths] = useState([]);
 
     const eraseStartRef = useRef(null);
     const canvasRef = useRef(null);
@@ -232,50 +237,141 @@ export const localStates = () => {
     // --- Generación de trazos desde imagen (via backend) ---
 
     const captureImageSnapshot = () => {
-        // Create a temporary canvas with only the image rendered inside the circle
         const tempCanvas = document.createElement('canvas');
         tempCanvas.width = canvasSize;
         tempCanvas.height = canvasSize;
         const ctx = tempCanvas.getContext('2d');
 
-        // Fill background
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(0, 0, canvasSize, canvasSize);
 
-        // Clip to circle
         ctx.save();
         ctx.beginPath();
         ctx.arc(center, center, circleRadius, 0, Math.PI * 2);
         ctx.clip();
 
-        // Draw image with current position/scale
-        if (image) {
+        // 1. DIBUJAR IMAGEN BASE (como en editorEffect respetando la rotacion!)
+        if (image && layers.image) {
             ctx.save();
-            ctx.translate(center + imagePos.x, center + imagePos.y);
+            ctx.translate(center, center);
+            ctx.rotate((rotation * Math.PI) / 180);
+            ctx.translate(imagePos.x, imagePos.y);
             ctx.scale(imageScale, imageScale);
             ctx.drawImage(image, -image.width / 2, -image.height / 2);
             ctx.restore();
         }
+
+        // 2. DIBUJAR TRAZOS MANUALES RESPETANDO SU ROTACION
+        const renderStrokeLineForSnapshot = (stroke, rotOffset) => {
+            if (!stroke.points || stroke.points.length === 0) return;
+            ctx.save();
+            ctx.translate(center, center);
+            ctx.rotate((rotOffset * Math.PI) / 180);
+            ctx.translate(-center, -center);
+
+            ctx.beginPath();
+            if (stroke.type === 'erase') {
+                ctx.globalCompositeOperation = 'destination-out';
+                ctx.lineWidth = stroke.width || 20;
+                ctx.strokeStyle = 'rgba(0,0,0,1)';
+            } else {
+                ctx.globalCompositeOperation = 'source-over';
+                ctx.lineWidth = stroke.width || brushWidth;
+                ctx.strokeStyle = '#000000'; // Forzar sólido negro para opencv
+            }
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            stroke.points.forEach((p, i) => {
+                if (i === 0) ctx.moveTo(p.x, p.y);
+                else ctx.lineTo(p.x, p.y);
+            });
+            ctx.stroke();
+            ctx.restore();
+        };
+
+        const allStrokes = [...strokes];
+        if (currentStroke) allStrokes.push(currentStroke);
+
+        allStrokes.forEach(stroke => {
+            const isErase = stroke.type === 'erase';
+            if (isErase) {
+                renderStrokeLineForSnapshot(stroke, rotation - (stroke.initialRotation || 0));
+                return;
+            }
+            
+            if (layers.red && (stroke.type === 'draw-twin' || !stroke.type)) {
+                renderStrokeLineForSnapshot(stroke, 0); 
+            }
+            if (layers.black && (stroke.type === 'draw-twin' || !stroke.type)) {
+                renderStrokeLineForSnapshot(stroke, rotation - (stroke.initialRotation || 0));
+            }
+            if (layers.blue && stroke.type === 'draw-blue') {
+                renderStrokeLineForSnapshot(stroke, rotation - (stroke.initialRotation || 0));
+            }
+            // Numeros omitidos
+        });
 
         ctx.restore();
         return tempCanvas.toDataURL('image/png');
     };
 
     const handleGenerateStrokes = () => {
-        if (!image) return;
+        if (!image && strokes.length === 0) return;
+        setPreviewGroupPaths([]); // Limpiar la vista de grupos antes de empezar
         const n = Math.max(1, Math.min(50, strokeCount));
         const imageData = captureImageSnapshot();
 
-        f.editor.generateStrokesFromImage({
-            imageData,
-            n,
-            canvasSize,
-            center,
-            circleRadius,
-        });
+        // Conectar al WebSocket para recibir logs
+        setGenerationLogs(["Conectando al motor matemático..."]);
+        const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        // Asumiendo que el backend corre en el puerto 8369 en desarrollo
+        const wsUrl = `${wsProtocol}//${window.location.hostname}:8369/api/editor/ws/frontend_client`;
+        const ws = new WebSocket(wsUrl);
+        
+        ws.onmessage = (event) => {
+            try {
+                const data = JSON.parse(event.data);
+                if (data.type === 'log') {
+                    setGenerationLogs(prev => [...prev.slice(-3), data.msg]);
+                } else if (data.type === 'preview') {
+                    setPreviewPaths(data.paths);
+                }
+            } catch (e) {
+                setGenerationLogs(prev => [...prev.slice(-3), event.data]);
+            }
+        };
+        
+        ws.onopen = () => {
+            f.editor.generateStrokesFromImage({
+                imageData,
+                n,
+                canvasSize,
+                center,
+                circleRadius,
+                clientId: "frontend_client",
+                currentRotation: rotation
+            }).then(() => {
+                setTimeout(() => {
+                    ws.close();
+                    setGenerationLogs([]);
+                    setPreviewPaths([]);
+                    setPreviewGroupPaths([]); // Clear any old preview paths if they existed
+                }, 1000); 
+            }).catch(() => {
+                ws.close();
+                setGenerationLogs(["Error en la generación."]);
+                setTimeout(() => {
+                    setGenerationLogs([]);
+                    setPreviewPaths([]);
+                }, 2000);
+            });
+        };
+
         setSelectedGeneratedId(null);
         setMenuBarOpen(true);
     };
+
+
 
     const handleSelectGeneratedStroke = (id) => {
         setSelectedGeneratedId(id);
@@ -321,6 +417,7 @@ export const localStates = () => {
         strokeCount, setStrokeCount,
         generatedStrokes, selectedGeneratedId, hoveredGeneratedId,
         handleGenerateStrokes, handleSelectGeneratedStroke,
+        generationLogs, previewPaths, setPreviewPaths,
     }
 }
 
@@ -328,7 +425,8 @@ export const editorEffect = (state) => {
     const { 
         init, canvasRef, canvasSize, center, circleRadius,
         image, imagePos, imageScale, rotation, strokes, currentStroke, layers, brushWidth, stampedNumbers, numberSize, purpleNumberSize,
-        generatedStrokes, selectedGeneratedId, hoveredGeneratedId, handleSelectGeneratedStroke
+        generatedStrokes, selectedGeneratedId, hoveredGeneratedId, handleSelectGeneratedStroke,
+        previewPaths, previewGroupPaths
     } = state;
 
     useEffect(() => {
@@ -469,7 +567,53 @@ export const editorEffect = (state) => {
 
         ctx.restore(); 
 
-        // 6. DIBUJAR TRAZOS GENERADOS como preview
+        // 6. DIBUJAR PREVIEW DE GENERACIÓN EN VIVO (WebSocket)
+        if (previewPaths && previewPaths.length > 0) {
+            ctx.save();
+            ctx.strokeStyle = '#22c55e'; // Verde neón interactivo para ver cómo trabaja
+            ctx.lineWidth = 2;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            
+            previewPaths.forEach(path => {
+                if (path.length < 2) return;
+                ctx.beginPath();
+                path.forEach((p, i) => {
+                    if (i === 0) ctx.moveTo(p[0], p[1]);
+                    else ctx.lineTo(p[0], p[1]);
+                });
+                ctx.stroke();
+            });
+            ctx.restore();
+        }
+
+        // 6b. DIBUJAR PREVIEW DE GRUPOS DE TOLERANCIA
+        if (previewGroupPaths && previewGroupPaths.length > 0) {
+            ctx.save();
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.globalAlpha = 0.8;
+            
+            previewGroupPaths.forEach((group, index) => {
+                // Color distinto basado en ID para mostrar la topología visual
+                // Usar index como semilla garantiza distintos colores incluso si IDs saltan
+                ctx.strokeStyle = `hsl(${(index * 137.5) % 360}, 85%, 55%)`;
+                ctx.lineWidth = 4;
+                
+                group.paths.forEach(path => {
+                    if (path.length < 2) return;
+                    ctx.beginPath();
+                    path.forEach((p, i) => {
+                        if (i === 0) ctx.moveTo(p[0], p[1]);
+                        else ctx.lineTo(p[0], p[1]);
+                    });
+                    ctx.stroke();
+                });
+            });
+            ctx.restore();
+        }
+
+        // 7. DIBUJAR TRAZOS GENERADOS como preview
         if (layers.generated) {
             const genArr = Array.isArray(generatedStrokes) ? generatedStrokes : [];
             genArr.forEach(gs => {
@@ -525,5 +669,5 @@ export const editorEffect = (state) => {
         ctx.lineWidth = 4;
         ctx.stroke();
 
-    }, [image, imagePos, imageScale, rotation, strokes, currentStroke, layers, brushWidth, stampedNumbers, numberSize, purpleNumberSize, generatedStrokes, selectedGeneratedId, hoveredGeneratedId]);
+    }, [image, imagePos, imageScale, rotation, strokes, currentStroke, layers, brushWidth, stampedNumbers, numberSize, purpleNumberSize, generatedStrokes, selectedGeneratedId, hoveredGeneratedId, previewPaths, previewGroupPaths]);
 }

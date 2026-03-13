@@ -1,5 +1,6 @@
-import { useMemo } from 'react';
+import { useMemo, useEffect, useRef } from 'react';
 import { useStates, createState } from '../../Hooks/useStates';
+import { Loader2 } from 'lucide-react';
 
 export const MenuBarEditor = () => {
     const { s } = useStates();
@@ -9,6 +10,16 @@ export const MenuBarEditor = () => {
     }, [s.editor?.generatedStrokes]);
     const selectedId = useMemo(() => s.editor?.selectedGeneratedId, [s.editor?.selectedGeneratedId]);
     const loading = useMemo(() => s.editor?.loading, [s.editor?.loading]);
+
+    const logs = useMemo(() => s.editor?.generationLogs || [], [s.editor?.generationLogs]);
+    const bottomRef = useRef(null);
+
+    // Auto-scroll para los logs
+    useEffect(() => {
+        if (bottomRef.current) {
+            bottomRef.current.scrollIntoView({ behavior: 'smooth' });
+        }
+    }, [logs]);
 
     // We need to call the select function from the editor's localStates.
     // Since the editor stores generatedStrokes in redux, we update selectedGeneratedId via createState
@@ -21,11 +32,28 @@ export const MenuBarEditor = () => {
         setSelectedGeneratedId(id);
     };
 
-    if (loading) {
+    if (loading || logs.length > 0) {
         return (
-            <div className="p-4 text-center" style={{ color: 'var(--ce-text-muted, #94a3b8)' }}>
-                <p className="text-sm">Procesando imagen...</p>
-                <div className="mt-2 animate-pulse w-8 h-8 mx-auto rounded-full" style={{ backgroundColor: 'var(--ce-accent, #4f46e5)' }}></div>
+            <div className="flex flex-col h-full bg-[#1e293b] text-white p-4 justify-between border-l border-white/10">
+                <div className="flex flex-col">
+                    <div className="flex items-center gap-3 mb-6">
+                        <Loader2 className="animate-spin text-blue-400" size={24} />
+                        <h3 className="font-semibold text-lg text-slate-200">Procesando Imagen</h3>
+                    </div>
+                    
+                    <div className="flex flex-col gap-3 font-mono text-sm max-h-[70vh] overflow-y-auto pr-2" style={{ scrollbarWidth: 'thin' }}>
+                        {logs.map((log, i) => (
+                            <div 
+                                key={i} 
+                                className={`flex items-start gap-2 ${i === logs.length - 1 ? 'text-white opacity-100 scale-100' : 'text-slate-400 opacity-60 scale-[0.98]'} transition-all`}
+                            >
+                                <span className="text-blue-400 mt-0.5">❯</span>
+                                <span style={{ wordBreak: 'break-word', lineHeight: 1.4 }}>{log}</span>
+                            </div>
+                        ))}
+                        <div ref={bottomRef} />
+                    </div>
+                </div>
             </div>
         );
     }
